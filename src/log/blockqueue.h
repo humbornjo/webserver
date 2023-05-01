@@ -3,6 +3,7 @@
 
 #include <mutex>
 #include <deque>
+#include <assert.h>
 #include <condition_variable>
 #include <sys/time.h>
 

@@ -35,7 +35,7 @@ ThreadPool::~ThreadPool() {
 template<class F>
 void ThreadPool::AddTask(F &&task) {
     {
-        std::lock_guard<std::mutex> locker(pool_->mtx);
+        std::lock_guard<std::mutex> locker(pool_->mtx_);
         pool_->tasks.emplace(std::forward<F>(task));
     }
     pool_->cond.notify_one();

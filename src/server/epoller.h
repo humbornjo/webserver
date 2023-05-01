@@ -31,7 +31,7 @@ public:
     // return the event type of the i th fd in events_, const enssure robustness
     uint32_t GetEvent(size_t i) const;
 
-    int Wait();
+    int Wait(int time_ms = -1);
 };
 
 #endif //EPOLLER_H

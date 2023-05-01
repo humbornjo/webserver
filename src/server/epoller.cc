@@ -41,6 +41,6 @@ uint32_t Epoller::GetEvent(size_t i) const {
     return events_[i].events;
 }
 
-int Epoller::Wait() {
-    epoll_wait(epollfd_, &events_[0], static_cast<int>(events_.size()), -1);
+int Epoller::Wait(int time_ms) {
+    return epoll_wait(epollfd_, &events_[0], static_cast<int>(events_.size()), time_ms);
 }

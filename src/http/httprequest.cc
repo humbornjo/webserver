@@ -169,6 +169,12 @@ void HttpRequest::ParseFromUrlencoded_() {
             case '+':
                 body_[i] = ' ';
                 break;
+            case '%':
+                num = ConverHex(body_[i + 1]) * 16 + ConverHex(body_[i + 2]);
+                body_[i + 2] = num % 10 + '0';
+                body_[i + 1] = num / 10 + '0';
+                i += 2;
+                break;
             case '&':
                 value = body_.substr(j, i - j);
                 j = i + 1;
@@ -179,6 +185,65 @@ void HttpRequest::ParseFromUrlencoded_() {
                 break;            
         }
     }
+    assert(j<=i);
+    if(post_.count(key) == 0 && j < i) {
+        value = body_.substr(j, i - j);
+        post_[key] = value;
+    }    
+}
+
+bool HttpRequest::UserVerify(const std::string& name, const std::string& pwd, bool is_login) {
+    if(name == "" || pwd == "") { 
+        return false; 
+    }
+    LOG_INFO("Verify name:%s pwd:%s", name.c_str(), pwd.c_str());
+    MYSQL* sql;
+    SqlConnRAII(&sql,  SqlConnPool::Instance());
+    assert(sql);   
+
+    bool flag = false;
+    char order[256] = { 0 };
+    MYSQL_RES *res = nullptr;
+    
+    if(!is_login) { flag = true; }
+    snprintf(order, 256, "SELECT username, password FROM user WHERE username='%s' LIMIT 1", name.c_str());
+    LOG_DEBUG("%s", order);
+
+    if(mysql_query(sql, order)) { 
+        mysql_free_result(res);
+        return false; 
+    }
+    res = mysql_store_result(sql);  
+    while(MYSQL_ROW row = mysql_fetch_row(res)) {
+        LOG_DEBUG("MYSQL ROW: %s %s", row[0], row[1]);
+        std::string password(row[1]);
+        if(is_login) {
+            if(pwd == password) { flag = true; }
+            else {
+                flag = false;
+                LOG_DEBUG("pwd error!");
+            }
+        } 
+        else { 
+            flag = false; 
+            LOG_DEBUG("user used!");
+        }
+    }
+    mysql_free_result(res);  
+
+    if(!is_login && flag == true) {
+        LOG_DEBUG("regirster!");
+        bzero(order, 256);
+        snprintf(order, 256,"INSERT INTO user(username, password) VALUES('%s','%s')", name.c_str(), pwd.c_str());
+        LOG_DEBUG( "%s", order);
+        if(mysql_query(sql, order)) { 
+            LOG_DEBUG( "Insert error!");
+            flag = false; 
+        }
+    }
+    SqlConnPool::Instance()->FreeConn(sql);
+    LOG_DEBUG( "UserVerify success!!");
+    return flag;    
 }
 
 int HttpRequest::ConverHex(char ch) {
