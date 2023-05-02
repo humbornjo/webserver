@@ -2,7 +2,7 @@ CXX = g++
 CFLAGS = -std=c++14 -O2 -Wall -g 
 
 TARGET = server
-OBJS = ../src/log/*.cc ../src/pool/sqlconnpool.cc ../src/timer/*.cc \
+OBJS = ../src/log/log.cc ../src/pool/sqlconnpool.cc ../src/timer/*.cc \
        ../src/http/*.cc ../src/server/*.cc \
        ../src/buffer/*.cc ../src/main.cc
 

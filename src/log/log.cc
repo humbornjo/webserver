@@ -183,3 +183,4 @@ void Log::AsyncWrite_() {
         fputs(str.c_str(), fp_);
     }
 }
+
