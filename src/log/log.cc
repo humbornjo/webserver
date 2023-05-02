@@ -1,5 +1,39 @@
 #include "log.h"
 
+Log::Log() {
+    line_count_ = 0;
+    is_async_ = false;
+    write_thread_ = nullptr;
+    deque_ = nullptr;
+    to_day_ = 0;
+    fp_ = nullptr;
+}
+
+Log::~Log() {
+    if(write_thread_ && write_thread_->joinable()) {
+        while (!deque_->empty()) {
+            deque_->flush();
+        }
+        deque_->Close();
+        write_thread_->join();
+    }
+    if (fp_) {
+        std::lock_guard<std::mutex> locker(mtx_);
+        flush();
+        fclose(fp_);
+    }
+}
+
+int Log::GetLevel() {
+    std::lock_guard<std::mutex> locker(mtx_);
+    return level_;
+}
+
+void Log::SetLevel(int level) {
+    std::lock_guard<std::mutex> locker(mtx_);
+    level_ = level;
+}
+
 void Log::init(int level, const char* path, 
                 const char* suffix, int max_queue_size) {
     is_open_ = true;
@@ -42,15 +76,6 @@ void Log::init(int level, const char* path,
         }
         assert(fp_ != nullptr);
     }
-}
-
-Log* Log::Instance() {
-    static Log inst;
-    return &inst;
-}
-
-void Log::FlushLogThread() {
-    Log::Instance()->AsyncWrite_();
 }
 
 void Log::write(int level, const char *format,...) {
@@ -111,6 +136,15 @@ void Log::write(int level, const char *format,...) {
     }
 }
 
+Log* Log::Instance() {
+    static Log inst;
+    return &inst;
+}
+
+void Log::FlushLogThread() {
+    Log::Instance()->AsyncWrite_();
+}
+
 void Log::flush() {
     if (is_async_) {
         deque_->flush();
@@ -118,42 +152,8 @@ void Log::flush() {
     fflush(fp_);
 }
 
-int Log::GetLevel() {
-    std::lock_guard<std::mutex> locker(mtx_);
-    return level_;
-}
-
-void Log::SetLevel(int level) {
-    std::lock_guard<std::mutex> locker(mtx_);
-    level_ = level;
-}
-
 bool Log::IsOpen() {
     return is_open_;
-}
-
-Log::Log() {
-    line_count_ = 0;
-    is_async_ = false;
-    write_thread_ = nullptr;
-    deque_ = nullptr;
-    to_day_ = 0;
-    fp_ = nullptr;
-}
-
-Log::~Log() {
-    if(write_thread_ && write_thread_->joinable()) {
-        while (!deque_->empty()) {
-            deque_->flush();
-        }
-        deque_->Close();
-        write_thread_->join();
-    }
-    if (fp_) {
-        std::lock_guard<std::mutex> locker(mtx_);
-        flush();
-        fclose(fp_);
-    }
 }
 
 void Log::AppendLogLevelTitle_(int level) {
