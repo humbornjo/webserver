@@ -1,70 +1,64 @@
 #ifndef HTTP_CONN_H
 #define HTTP_CONN_H
 
+#include <arpa/inet.h> // sockaddr_in
+#include <errno.h>
+#include <stdlib.h> // atoi()
 #include <sys/types.h>
-#include <sys/uio.h>     // readv/writev
-#include <arpa/inet.h>   // sockaddr_in
-#include <stdlib.h>      // atoi()
-#include <errno.h>      
+#include <sys/uio.h> // readv/writev
 
+#include "../buffer/buffer.h"
 #include "../log/log.h"
 #include "../pool/sqlconnRAII.h"
-#include "../buffer/buffer.h"
 #include "httprequest.h"
 #include "httpresponse.h"
 
 class HttpConn {
 public:
-    HttpConn();
+  HttpConn();
 
-    ~HttpConn();
+  ~HttpConn();
 
-    void init(int sockFd, const sockaddr_in& addr);
+  void init(int sockFd, const sockaddr_in &addr);
 
-    ssize_t read(int* saveErrno);
+  ssize_t read(int *saveErrno);
 
-    ssize_t write(int* saveErrno);
+  ssize_t write(int *saveErrno);
 
-    void Close();
+  void Close();
 
-    int GetFd() const;
+  int GetFd() const;
 
-    int GetPort() const;
+  int GetPort() const;
 
-    const char* GetIP() const;
-    
-    sockaddr_in GetAddr() const;
-    
-    bool process();
+  const char *GetIP() const;
 
-    int ToWriteBytes() { 
-        return iov_[0].iov_len + iov_[1].iov_len; 
-    }
+  sockaddr_in GetAddr() const;
 
-    bool IsKeepAlive() const {
-        return request_.IsKeepAlive();
-    }
+  bool process();
 
-    static bool isET;
-    static const char* srcDir;
-    static std::atomic<int> userCount;
-    
+  int ToWriteBytes() { return iov_[0].iov_len + iov_[1].iov_len; }
+
+  bool IsKeepAlive() const { return request_.IsKeepAlive(); }
+
+  static bool isET;
+  static const char *srcDir;
+  static std::atomic<int> userCount;
+
 private:
-   
-    int fd_;
-    struct  sockaddr_in addr_;
+  int fd_;
+  struct sockaddr_in addr_;
 
-    bool is_close_;
-    
-    int iov_cnt_;
-    struct iovec iov_[2];
-    
-    Buffer read_buff_; // 读缓冲区
-    Buffer write_buff_; // 写缓冲区
+  bool is_close_;
 
-    HttpRequest request_;
-    HttpResponse response_;
+  int iov_cnt_;
+  struct iovec iov_[2];
+
+  Buffer read_buff_;  // 读缓冲区
+  Buffer write_buff_; // 写缓冲区
+
+  HttpRequest request_;
+  HttpResponse response_;
 };
 
-
-#endif //HTTP_CONN_H
+#endif // HTTP_CONN_H
